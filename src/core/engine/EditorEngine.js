@@ -13,6 +13,7 @@ import {
   MovePieceCommand,
   AddPieceCommand
 } from '../commands/BrickCommands.js';
+import { PresetRegistry } from '../registry/PresetRegistry.js';
 
 let instance = null;
 
@@ -367,6 +368,24 @@ export class EditorEngine {
       message: `Cargado modelo "${name}" (${pieces.length.toLocaleString()} piezas)`,
       type: 'success',
     });
+  }
+
+  loadPresetById(presetId) {
+    const preset = PresetRegistry.getById(presetId);
+    if (preset) {
+      this.loadPreset(preset.pieces, preset.name);
+      return true;
+    }
+    return false;
+  }
+
+  loadDefaultPreset() {
+    const preset = PresetRegistry.getDefault();
+    if (preset) {
+      this.loadPreset(preset.pieces, preset.name);
+      return true;
+    }
+    return false;
   }
 
   exportJSON() {

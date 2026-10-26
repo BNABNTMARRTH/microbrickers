@@ -10,15 +10,18 @@ import BillOfMaterialsModal from './components/editor/BillOfMaterialsModal.jsx';
 import ToastContainer from './components/editor/ToastContainer.jsx';
 import PieceActionToolbar from './components/editor/PieceActionToolbar.jsx';
 import { EditorEngine } from './core/engine/EditorEngine.js';
-import supercarData from './data/presets/supercarModel.json';
+import { PresetRegistry } from './core/registry/PresetRegistry.js';
 
 export default function App() {
   const [isBomOpen, setIsBomOpen] = useState(false);
 
   // Inicialización del Singleton del motor de dominio
   useEffect(() => {
-    const engine = EditorEngine.getInstance(supercarData);
-    engine.model.name = 'Supercar Corsa GT';
+    const defaultPreset = PresetRegistry.getDefault();
+    const engine = EditorEngine.getInstance(defaultPreset?.pieces || []);
+    if (defaultPreset) {
+      engine.model.name = defaultPreset.name;
+    }
     // Intenta restaurar auto-guardado previo v2 si existe
     const saved = engine.storageManager.loadFromLocalStorage();
     if (saved && Array.isArray(saved.pieces) && saved.pieces.length > 0) {

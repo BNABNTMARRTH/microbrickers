@@ -5,14 +5,14 @@ import {
 } from 'lucide-react';
 import { EditorEngine } from '../../core/engine/EditorEngine.js';
 import { EventBus, EDITOR_EVENTS } from '../../core/events/EventBus.js';
-import foxData from '../../data/foxModel.json';
-import supercarData from '../../data/presets/supercarModel.json';
+import { PresetRegistry } from '../../core/registry/PresetRegistry.js';
 
 export default function EditorHeader({ onOpenBOM }) {
   const engine = EditorEngine.getInstance();
+  const presets = PresetRegistry.getAll();
   const [pieceCount, setPieceCount] = useState(() => engine.model.getCount());
   const [history, setHistory] = useState({ canUndo: false, canRedo: false });
-  const [selectedPreset, setSelectedPreset] = useState('supercar');
+  const [selectedPreset, setSelectedPreset] = useState(() => PresetRegistry.getDefault()?.id || 'supercar');
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -23,8 +23,8 @@ export default function EditorHeader({ onOpenBOM }) {
       setHistory(h);
     });
     const unsubModel = EventBus.on(EDITOR_EVENTS.MODEL_LOADED, (d) => {
-      if (d.name?.includes('Supercar') || d.name?.includes('Corsa')) setSelectedPreset('supercar');
-      else if (d.name?.includes('Zorro')) setSelectedPreset('fox');
+      const match = presets.find((p) => p.name.toLowerCase() === d.name?.toLowerCase());
+      if (match) setSelectedPreset(match.id);
       else setSelectedPreset('custom');
     });
 
@@ -33,14 +33,16 @@ export default function EditorHeader({ onOpenBOM }) {
       unsubHist();
       unsubModel();
     };
-  }, []);
+  }, [presets]);
 
   const handlePresetChange = (e) => {
     const val = e.target.value;
     setSelectedPreset(val);
-    if (val === 'supercar') engine.loadPreset(supercarData, 'Supercar Corsa GT');
-    else if (val === 'fox') engine.loadPreset(foxData, 'Zorro Rojo');
-    else if (val === 'empty') engine.clearCanvas();
+    if (val === 'empty') {
+      engine.clearCanvas();
+    } else {
+      engine.loadPresetById(val);
+    }
   };
 
   const handleImportFile = (e) => {
@@ -130,8 +132,11 @@ export default function EditorHeader({ onOpenBOM }) {
             cursor: 'pointer',
           }}
         >
-          <option value="supercar">Supercar Corsa GT (2,588 pcs)</option>
-          <option value="fox">Zorro Rojo (1,357 pcs)</option>
+          {presets.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} ({p.piecesCount.toLocaleString()} pcs)
+            </option>
+          ))}
           <option value="empty">Lienzo Vacío</option>
           <option value="custom" disabled hidden>Modelo en Edición</option>
         </select>
